@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B ball World - Magic Pass</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&family=Bungee&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #ff4757; 
+            --secondary: #feca57; 
+            --accent: #54a0ff; 
+            --gold: #ffd32a;
+            --dark: #1e3799;
+            --success: #2ed573;
+        }
+        
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            background: var(--primary);
+            background-image: repeating-linear-gradient(45deg, #ff4757, #ff4757 40px, #ff6b81 40px, #ff6b81 80px);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* --- UI หน้าแรก (จองตั๋ว) --- */
+        #bookingUI { 
+            background: white; width: 90%; max-width: 380px; padding: 45px 30px; 
+            border-radius: 60px; border: 12px solid var(--secondary); 
+            text-align: center; box-shadow: 0 25px 0 rgba(0,0,0,0.2);
+            position: relative; animation: bounceIn 0.8s ease;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        h1 { font-family: 'Bungee', cursive; color: var(--primary); font-size: 3.5rem; margin: 0; text-shadow: 4px 4px 0 var(--secondary); }
+        
+        .input-box { 
+            width: 100%; padding: 18px 25px; border: 4px solid #f1f2f6; 
+            border-radius: 40px; font-family: 'Kanit'; font-size: 1.1rem; 
+            margin-top: 15px; box-sizing: border-box; background: #fffdf2; outline: none;
+        }
+        .input-box:focus { border-color: var(--accent); }
+
+        .btn-pay { 
+            background: var(--primary); color: white; border: none; padding: 20px; width: 100%; 
+            font-size: 1.6rem; font-weight: bold; border-radius: 60px; cursor: pointer; 
+            margin-top: 30px; box-shadow: 0 8px 0 #c4414e; font-family: 'Kanit'; transition: 0.1s;
+        }
+        .btn-pay:active { transform: translateY(4px); box-shadow: 0 4px 0 #c4414e; }
+
+        /* --- Overlay หน้ารอชำระเงิน --- */
+        .overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(12, 36, 97, 0.95); z-index: 1000; 
+            justify-content: center; align-items: center; backdrop-filter: blur(10px);
+        }
+        .modal { 
+            background: white; padding: 40px 30px; border-radius: 50px; 
+            text-align: center; width: 320px; border: 10px solid var(--gold);
+            position: relative; box-shadow: 0 0 50px rgba(255, 211, 42, 0.3);
+        }
+        .loader {
+            width: 60px; height: 60px; border: 8px solid #f3f3f3;
+            border-top: 8px solid var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .kbank-btn {
+            background: #00A950; color: white; text-decoration: none; 
+            display: block; padding: 18px; border-radius: 40px; 
+            font-weight: bold; font-size: 1.2rem; margin: 20px 0;
+            box-shadow: 0 6px 0 #007d3c;
+        }
+
+        /* --- หน้าตั๋วสุดจึ้ง (Final Ticket) --- */
+        #ticketPage { display: none; width: 380px; position: relative; filter: drop-shadow(0 30px 60px rgba(0,0,0,0.6)); }
+
+        .ticket-visual { 
+            background: #fffdf2; border-radius: 45px; overflow: hidden; 
+            position: relative; border: 6px solid #fff; 
+        }
+
+        .t-header { 
+            background: var(--dark); background-image: linear-gradient(90deg, var(--dark) 50%, #0c2461 50%); 
+            background-size: 50px 100%; color: white; padding: 35px 20px; text-align: center; 
+            border-bottom: 10px solid var(--secondary);
+        }
+
+        .t-body { padding: 30px; min-height: 300px; background: #fff; position: relative; }
+        .deco { position: absolute; font-size: 60px; z-index: 2; filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.1)); }
+        
+        .t-data { margin-bottom: 15px; position: relative; z-index: 10; background: rgba(255,255,255,0.9); padding: 8px 15px; border-radius: 15px; display: inline-block; border-left: 6px solid var(--primary); }
+        .t-label { font-size: 0.8rem; color: #ff9f1a; font-weight: bold; letter-spacing: 1px; }
+        .t-value { font-size: 1.3rem; font-weight: 700; color: #2f3542; display: block; }
+        
+        /* QR Code มุมขวาล่าง 100% ไม่โปร่งใส */
+        .qr-box { 
+            position: absolute; bottom: 20px; right: 20px; background: white; 
+            padding: 12px; border-radius: 20px; border: 3px solid var(--dark); z-index: 20;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
+        }
+        .qr-box img { width: 100px; height: 100px; display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="bookingUI">
+        <div style="font-size: 4.5rem;">🎡</div>
+        <h1>B ball</h1>
+        <p style="color: var(--primary); font-weight: bold; letter-spacing: 3px; margin-bottom: 25px;">AMUSEMENT PARK</p>
+        
+        <div style="text-align: left;">
+            <label style="font-weight: bold; margin-left: 20px; color: #555;">ชื่อผู้เข้าชม</label>
+            <input type="text" id="custName" class="input-box" placeholder="ระบุชื่อของคุณ">
+            
+            <label style="display:block; font-weight: bold; margin-top: 20px; margin-left: 20px; color: #555;">จำนวนสมาชิก</label>
+            <select id="qty" class="input-box">
+                <option value="1">1 ท่าน (200฿)</option>
+                <option value="2">2 ท่าน (400฿)</option>
+                <option value="5">5 ท่าน (1,000฿)</option>
+            </select>
+        </div>
+
+        <button class="btn-pay" onclick="openPayment()">ซื้อตั๋ววิเศษ ✨</button>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="modal">
+            <div id="loadingStep">
+                <div class="loader"></div>
+                <h2 style="font-family: 'Bungee'; color: var(--primary);">PAYMENT</h2>
+                <p style="font-weight: bold;">กรุณาโอนเงินเพื่อยืนยันสิทธิ์</p>
+                <a href="https://bbxuxy.github.io/Kasikram-bank/" target="_blank" class="kbank-btn">📱 จ่ายผ่าน K-BANK</a>
+                <p style="font-size: 0.8rem; color: #888;">ระบบจะอัปเดตสถานะใน 5 วินาที...</p>
+            </div>
+
+            <button id="confirmBtn" style="display:none; width:100%; background:var(--success); color:white; border:none; padding:18px; border-radius:40px; font-weight:bold; cursor:pointer; font-size: 1.1rem; box-shadow: 0 5px 0 #21a458;" onclick="showPin()">
+                ยืนยันการโอนเงิน ✅
+            </button>
+
+            <div id="pinStep" style="display:none;">
+                <p style="font-weight: bold; color: var(--dark);">ใส่รหัส PIN 4 หลัก</p>
+                <input type="password" id="pinInput" maxlength="4" class="input-box" style="text-align:center; font-size: 2.5rem; letter-spacing: 15px;" oninput="validatePin()">
+                <p id="errorMsg" style="color:red; display:none; margin-top:10px;">รหัสไม่ถูกต้อง!</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="ticketPage">
+        <div class="ticket-visual">
+            <div class="t-header">
+                <h2 style="margin:0; font-family:'Bungee'; font-size: 2.5rem; letter-spacing: 2px;">B ball WORLD</h2>
+                <div style="background: var(--gold); color: #000; padding: 2px 15px; border-radius: 10px; font-weight: bold; display: inline-block; margin-top: 10px;">SPECIAL ACCESS</div>
+            </div>
+            <div class="t-body">
+                <div class="deco" style="top:20px; right:30px;">🎠</div>
+                <div class="deco" style="bottom:20px; left:20px;">🎢</div>
+                <div class="deco" style="top: 120px; left: 45%; font-size: 40px;">🎈</div>
+                <div class="deco" style="top: 45%; left: 10%; font-size: 30px;">✨</div>
+
+                <div class="t-data"><span class="t-label">VISITOR</span><span class="t-value" id="finalName"></span></div><br>
+                <div class="t-data"><span class="t-label">TOTAL GUESTS</span><span class="t-value" id="finalQty"></span></div><br>
+                <div class="t-data"><span class="t-label">STATUS</span><span class="t-value" style="color: var(--success);">PAID & ACTIVE</span></div>
+                
+                <div class="qr-box" id="qrTarget"></div>
+            </div>
+        </div>
+        <button onclick="location.reload()" style="background:rgba(255,255,255,0.2); color:white; border:2px solid white; width:100%; padding:15px; border-radius:50px; margin-top:25px; font-weight:bold; cursor:pointer;">ออกกจากหน้านี้</button>
+    </div>
+
+    <script>
+        function openPayment() {
+            if(!document.getElementById('custName').value) return alert("บอกชื่อเราหน่อยนะจ๊ะ!");
+            document.getElementById('overlay').style.display = 'flex';
+            
+            // รอ 5 วินาทีเพื่อให้ปุ่มยืนยันเด้งขึ้นมา
+            setTimeout(() => {
+                document.getElementById('loadingStep').style.opacity = "0.3";
+                document.getElementById('confirmBtn').style.display = "block";
+                new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3').play().catch(()=>{});
+            }, 5000);
+        }
+
+        function showPin() {
+            document.getElementById('loadingStep').style.display = 'none';
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('pinStep').style.display = 'block';
+            document.getElementById('pinInput').focus();
+        }
+
+        function validatePin() {
+            const pin = document.getElementById('pinInput').value;
+            if(pin.length === 4) {
+                if(pin === "2555") {
+                    const name = document.getElementById('custName').value;
+                    const qty = document.getElementById('qty').value;
+                    
+                    // ข้อมูลใน QR: NAME:XXX|QTY:YYY
+                    const qrContent = encodeURIComponent(`NAME:${name}|QTY:${qty}`);
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrContent}&bgcolor=ffffff`;
+
+                    document.getElementById('finalName').innerText = name.toUpperCase();
+                    document.getElementById('finalQty').innerText = qty + " PERSONS";
+                    document.getElementById('qrTarget').innerHTML = `<img src="${qrUrl}">`;
+
+                    document.getElementById('overlay').style.display = 'none';
+                    document.getElementById('bookingUI').style.display = 'none';
+                    document.getElementById('ticketPage').style.display = 'block';
+                } else {
+                    document.getElementById('errorMsg').style.display = 'block';
+                    document.getElementById('pinInput').value = '';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
