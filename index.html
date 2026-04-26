@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B ball - Ultimate Amusement Ticket</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&family=Bungee&family=Libre+Barcode+128&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ff4757;
+            --secondary: #feca57;
+            --accent: #54a0ff;
+            --success: #2ed573;
+            --dark: #2f3542;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background: var(--accent) radial-gradient(circle, #54a0ff 0%, #1e3799 100%);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- Main Page --- */
+        #mainPage {
+            background: white; width: 90%; max-width: 380px; padding: 35px;
+            border-radius: 40px; border: 10px solid var(--secondary);
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        h1 { font-family: 'Bungee', cursive; color: var(--primary); font-size: 3rem; margin: 0; text-shadow: 4px 4px 0 var(--secondary); }
+        
+        .input-group { text-align: left; margin-bottom: 20px; }
+        
+        /* ปรับช่องกรอกให้มนและขนาดพอดี */
+        input[type="text"], input[type="password"], select { 
+            width: 100%; 
+            padding: 12px 20px; 
+            border: 3px solid #eee; 
+            border-radius: 30px; /* เพิ่มความมน */
+            font-family: 'Kanit'; 
+            box-sizing: border-box; 
+            font-size: 1rem;
+            margin-top: 8px;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: #fff;
+            box-shadow: 0 0 10px rgba(84, 160, 255, 0.2);
+        }
+
+        .btn-pay {
+            background: var(--primary); color: white; border: none; padding: 15px; width: 100%;
+            font-size: 1.4rem; font-weight: bold; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 6px 0 #c4414e; transition: 0.1s; margin-top: 10px;
+        }
+        .btn-pay:active { transform: translateY(4px); box-shadow: 0 2px 0 #c4414e; }
+
+        /* --- Overlay & PIN --- */
+        .overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center;
+            backdrop-filter: blur(15px);
+        }
+        .modal { background: white; padding: 30px; border-radius: 35px; text-align: center; width: 320px; }
+        
+        .loader { border: 6px solid #f3f3f3; border-top: 6px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #pinBox { max-height: 0; overflow: hidden; transition: 0.5s ease-in-out; background: #f9f9f9; border-radius: 25px; }
+        #pinBox.show { max-height: 250px; padding: 20px; margin-top: 15px; border: 2px solid var(--secondary); }
+
+        /* --- THE ULTIMATE TICKET --- */
+        #ticketPage {
+            display: none; width: 360px; position: relative;
+            animation: ticketIn 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        @keyframes ticketIn {
+            0% { transform: scale(0.8) translateY(100px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .ticket-visual {
+            background: #fffdf2; border-radius: 30px; overflow: hidden;
+            position: relative; border: 1px solid #ddd;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+        }
+
+        /* รอยหยักข้างตั๋ว */
+        .ticket-visual::before, .ticket-visual::after {
+            content: ''; position: absolute; width: 36px; height: 36px;
+            background: #1e3799; border-radius: 50%; top: 62%; z-index: 10;
+        }
+        .ticket-visual::before { left: -18px; }
+        .ticket-visual::after { right: -18px; }
+
+        .t-header {
+            background: var(--primary); color: white; padding: 30px 20px; text-align: center;
+            border-bottom: 6px dashed var(--secondary);
+        }
+
+        .t-body { padding: 30px 25px; position: relative; background-color: #fff; }
+
+        /* ของตกแต่งแบบโปร่งใส 50% */
+        .deco-item {
+            position: absolute; font-size: 70px; opacity: 0.5; z-index: 0; pointer-events: none;
+        }
+
+        .t-row { display: flex; justify-content: space-between; margin-bottom: 15px; position: relative; z-index: 1; }
+        .t-label { font-size: 0.75rem; color: #aaa; font-weight: bold; text-transform: uppercase; }
+        .t-value { font-size: 1.1rem; font-weight: 700; color: var(--dark); }
+
+        .t-divider { border-top: 2px dashed #eee; margin: 20px 0; }
+
+        .t-barcode-area { text-align: center; position: relative; z-index: 1; }
+        .barcode-img { font-family: 'Libre Barcode 128', cursive; font-size: 80px; line-height: 1; margin: 0; }
+        .barcode-num { font-size: 0.85rem; letter-spacing: 5px; color: #555; }
+
+        .btn-exit {
+            background: white; color: var(--primary); border: none; padding: 12px;
+            border-radius: 50px; cursor: pointer; font-family: 'Kanit'; font-weight: bold;
+            margin-top: 25px; width: 100%; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mainPage">
+        <h1>B ball</h1>
+        <p style="margin-top:-5px; color:#ff6b81; font-weight: bold;">🎡 TICKET BOOKING 🎡</p>
+        
+        <div class="input-group">
+            <label style="font-weight: bold; margin-left: 10px;">ชื่อลูกค้า (Name)</label>
+            <input type="text" id="custName" placeholder="ระบุชื่อของคุณ">
+        </div>
+        
+        <div class="input-group">
+            <label style="font-weight: bold; margin-left: 10px;">จำนวนท่าน (Guests)</label>
+            <select id="qty" onchange="updatePrice()">
+                <script>for(let i=1; i<=9; i++) document.write(`<option value="${i}">${i} ท่าน</option>`)</script>
+            </select>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 12px; border-radius: 25px; margin: 10px 0 20px 0; border: 2px solid #eee;">
+            <span style="font-size: 0.9rem; color:#888;">ยอดรวม: </span>
+            <span id="displayPrice" style="color:var(--primary); font-size: 1.8rem; font-weight: bold;">200฿</span>
+        </div>
+        
+        <button class="btn-pay" onclick="openPopup()">BOOK NOW</button>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="modal">
+            <div id="loadingUI">
+                <div class="loader"></div>
+                <h3>ยืนยันการชำระเงิน</h3>
+                <a href="https://bbxuxy.github.io/Kasikram-bank/" target="_blank" style="display:block; background:#00A950; color:white; text-decoration:none; padding:12px; border-radius:30px; font-weight:bold; margin-bottom:15px;">K-BANK</a>
+            </div>
+            
+            <button id="btnDone" style="display:none; width:100%; background:var(--success); color:white; border:none; padding:12px; border-radius:30px; font-weight:bold; cursor:pointer;" onclick="showPin()">ชำระเงินเรียบร้อย ✅</button>
+
+            <div id="pinBox">
+                <p style="margin-bottom:10px; font-size:0.9rem;">ระบุรหัสผ่าน 4 หลัก</p>
+                <input type="password" id="pinInput" maxlength="4" style="text-align:center; font-size:2rem; letter-spacing:12px; width:100%;" oninput="checkPin()">
+                <p id="errorMsg" style="color:red; font-size:0.8rem; display:none; margin-top:8px;">รหัสไม่ถูกต้อง</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="ticketPage">
+        <div class="ticket-visual">
+            <div class="t-header">
+                <h2 style="margin:0; font-family:'Bungee'; font-size: 2.5rem;">B ball</h2>
+                <div style="font-size: 0.8rem; letter-spacing: 2px;">ADMISSION TICKET</div>
+            </div>
+
+            <div class="t-body">
+                <div class="deco-item" style="top: 10%; right: 5%; transform: rotate(15deg);">🎡</div>
+                <div class="deco-item" style="bottom: 20%; left: 5%; transform: rotate(-15deg);">🎠</div>
+
+                <div class="t-row">
+                    <div><span class="t-label">Visitor</span><br><span class="t-value" id="tName">-</span></div>
+                    <div style="text-align:right;"><span class="t-label">Guests</span><br><span class="t-value" id="tQty">-</span></div>
+                </div>
+
+                <div class="t-row">
+                    <div><span class="t-label">Date</span><br><span class="t-value" id="tTime" style="font-size: 0.9rem;">-</span></div>
+                    <div style="text-align:right;"><span class="t-label">No.</span><br><span class="t-value" id="tID" style="color:var(--primary);">-</span></div>
+                </div>
+
+                <div class="t-divider"></div>
+
+                <div class="t-barcode-area">
+                    <p class="barcode-img" id="barcodeVisual">1234567890123</p>
+                    <p class="barcode-num" id="barcodeText">#1234567890123</p>
+                </div>
+            </div>
+        </div>
+        <button class="btn-exit" onclick="confirmExit()">BACK TO HOME</button>
+    </div>
+
+    <script>
+        function updatePrice() {
+            const total = document.getElementById('qty').value * 200;
+            document.getElementById('displayPrice').innerText = total.toLocaleString() + '฿';
+        }
+
+        function openPopup() {
+            if(document.getElementById('custName').value.trim() === "") return alert("ใส่ชื่อด้วยนะคนสวย/คนหล่อ!");
+            document.getElementById('overlay').style.display = 'flex';
+            setTimeout(() => { document.getElementById('btnDone').style.display = 'block'; }, 5000);
+        }
+
+        function showPin() { document.getElementById('pinBox').classList.add('show'); document.getElementById('pinInput').focus(); }
+
+        function checkPin() {
+            const pin = document.getElementById('pinInput').value;
+            if(pin.length === 4) {
+                if(pin === "2555") {
+                    let rb = ""; for(let i=0; i<13; i++) rb += Math.floor(Math.random() * 10);
+                    document.getElementById('tName').innerText = document.getElementById('custName').value;
+                    document.getElementById('tQty').innerText = document.getElementById('qty').value + " ท่าน";
+                    document.getElementById('tID').innerText = "BB-" + Math.floor(100000 + Math.random() * 900000);
+                    document.getElementById('tTime').innerText = new Date().toLocaleString('th-TH', {dateStyle:'short', timeStyle:'short'});
+                    document.getElementById('barcodeVisual').innerText = rb;
+                    document.getElementById('barcodeText').innerText = "#" + rb;
+                    
+                    document.getElementById('overlay').style.display = 'none';
+                    document.getElementById('mainPage').style.display = 'none';
+                    document.getElementById('ticketPage').style.display = 'block';
+                } else {
+                    document.getElementById('errorMsg').style.display = 'block';
+                    document.getElementById('pinInput').value = '';
+                }
+            }
+        }
+
+        function confirmExit() { if(confirm("กลับหน้าหลักเลยมั้ยจ๊ะ?")) location.reload(); }
+    </script>
+</body>
+</html>
